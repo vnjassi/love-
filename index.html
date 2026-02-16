@@ -2,17 +2,33 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>3D Girl</title>
+<title>Animated Girl Background</title>
+
 <style>
-body{margin:0;overflow:hidden;}
-canvas{position:fixed;top:0;left:0;z-index:-1;}
+body{
+  margin:0;
+  overflow:hidden;
+  font-family:Arial;
+  background:black;
+}
+
+/* text on website */
 h1{
  position:absolute;
  top:40%;
  width:100%;
  text-align:center;
  color:white;
- font-size:40px;
+ font-size:45px;
+ z-index:10;
+}
+
+/* canvas background */
+canvas{
+ position:fixed;
+ top:0;
+ left:0;
+ z-index:-1;
 }
 </style>
 </head>
@@ -23,45 +39,61 @@ h1{
 <script type="module">
 
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.158/build/three.module.js";
-import {GLTFLoader} from "https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/loaders/GLTFLoader.js";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/loaders/GLTFLoader.js";
 
-const scene = new THREE.Scene();
+let scene = new THREE.Scene();
 
-const camera = new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,1000);
-camera.position.z = 3;
+let camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.set(0,1.4,3);
 
-const renderer = new THREE.WebGLRenderer({alpha:true,antialias:true});
-renderer.setSize(window.innerWidth,window.innerHeight);
+let renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 // light
 const light = new THREE.HemisphereLight(0xffffff,0x444444,1.5);
 scene.add(light);
 
-// load model
+// floor shadow light
+const dirLight = new THREE.DirectionalLight(0xffffff,1);
+dirLight.position.set(0,5,5);
+scene.add(dirLight);
+
+// load full animated girl
+let mixer;
+
 const loader = new GLTFLoader();
-loader.load("./girl.glb", (gltf)=>{
+loader.load("girl.glb", function(gltf){
 
- const model = gltf.scene;
- scene.add(model);
- model.scale.set(1.5,1.5,1.5);
- model.position.y=-1;
+  const model = gltf.scene;
+  scene.add(model);
 
- let mixer;
- if(gltf.animations.length>0){
-   mixer = new THREE.AnimationMixer(model);
-   const action = mixer.clipAction(gltf.animations[0]);
-   action.play();
- }
+  model.scale.set(1.3,1.3,1.3);
+  model.position.y = -1;
 
- function animate(){
-   requestAnimationFrame(animate);
-   model.rotation.y += 0.003;
-   if(mixer) mixer.update(0.01);
-   renderer.render(scene,camera);
- }
- animate();
+  // animation
+  mixer = new THREE.AnimationMixer(model);
+  gltf.animations.forEach((clip)=>{
+    mixer.clipAction(clip).play();
+  });
 
+});
+
+// animation loop
+function animate(){
+ requestAnimationFrame(animate);
+
+ if(mixer) mixer.update(0.01);
+
+ renderer.render(scene,camera);
+}
+animate();
+
+// resize
+window.addEventListener("resize", ()=>{
+ camera.aspect = window.innerWidth/window.innerHeight;
+ camera.updateProjectionMatrix();
+ renderer.setSize(window.innerWidth,window.innerHeight);
 });
 
 </script>
